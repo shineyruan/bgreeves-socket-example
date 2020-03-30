@@ -6,15 +6,14 @@
 
 #include "helpers.h"		// make_server_sockaddr(), get_port_number()
 
-static const int MAX_MESSAGE_SIZE = 256;
+static const size_t MAX_MESSAGE_SIZE = 256;
 
 /**
- * Receives a null-terminated string message from the client, prints it to stdout, 
- * then sends the integer 42 back to the client as a success code.
+ * Receives a string message from the client and prints it to stdout.
  *
  * Parameters:
- * 		connectionfd: 	File descriptor for a socket connection (e.g. the one
- *				returned by accept())
+ * 		connectionfd: 	File descriptor for a socket connection
+ * 				(e.g. the one returned by accept())
  * Returns:
  *		0 on success, -1 on failure.
  */
@@ -23,33 +22,26 @@ int handle_connection(int connectionfd) {
 	printf("New connection %d\n", connectionfd);
 
 	// (1) Receive message from client.
-	char msg[MAX_MESSAGE_SIZE];
+
+	char msg[MAX_MESSAGE_SIZE + 1];
 	memset(msg, 0, sizeof(msg));
 
-	for (int i = 0; i < MAX_MESSAGE_SIZE; i++) {
-		// Receive exactly one byte
-		int rval = recv(connectionfd, msg + i, 1, MSG_WAITALL);
+	// Call recv() enough times to consume all the data the client sends.
+	size_t recvd = 0;
+	ssize_t rval;
+	do {
+		// Receive as many additional bytes as we can in one call to recv()
+		// (while not exceeding MAX_MESSAGE_SIZE bytes in total).
+		rval = recv(connectionfd, msg + recvd, MAX_MESSAGE_SIZE - recvd, 0);
 		if (rval == -1) {
 			perror("Error reading stream message");
 			return -1;
 		}
-		// Stop if we received a null character
-		if (msg[i] == '\0') {
-			break;
-		}
-	}
+		recvd += rval;
+	} while (rval > 0);  // recv() returns 0 when client closes
 
 	// (2) Print out the message
 	printf("Client %d says '%s'\n", connectionfd, msg);
-
-	// (3) Send response code to client
-	int response = 42;
-	response = htons(response);
-        if (send(connectionfd, &response, sizeof(response), 0) == -1) {
-                perror("Error sending response to client");
-                return -1;
-        }
-
 
 	// (4) Close connection
 	close(connectionfd);
@@ -88,12 +80,14 @@ int run_server(int port, int queue_size) {
 	if (make_server_sockaddr(&addr, port) == -1) {
 		return -1;
 	}
+
+	// (3b) Bind to the port.
 	if (bind(sockfd, (sockaddr *) &addr, sizeof(addr)) == -1) {
 		perror("Error binding stream socket");
 		return -1;
 	}
 
-	// (3b) Detect which port was chosen
+	// (3c) Detect which port was chosen.
 	port = get_port_number(sockfd);
 	printf("Server listening on port %d...\n", port);
 

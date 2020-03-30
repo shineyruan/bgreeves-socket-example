@@ -47,7 +47,6 @@ In another terminal, spawn a client to send a message to the server:
 ```
 $ ./client localhost 8888 "hello server"
 Sending message hello server to localhost:8888
-Server responds with status code 42
 ```
 
 The server should print the message it receives to the terminal:

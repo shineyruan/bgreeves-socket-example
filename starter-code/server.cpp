@@ -6,15 +6,14 @@
 
 #include "helpers.h"		// make_server_sockaddr(), get_port_number()
 
-static const int MAX_MESSAGE_SIZE = 256;
+static const size_t MAX_MESSAGE_SIZE = 256;
 
 /**
- * Receives a null-terminated string message from the client, prints it to stdout, 
- * then sends the integer 42 back to the client as a success code.
+ * Receives a string message from the client and prints it to stdout.
  *
  * Parameters:
- * 		connectionfd: 	File descriptor for a socket connection (e.g. the one
- *				returned by accept())
+ * 		connectionfd: 	File descriptor for a socket connection
+ * 				(e.g. the one returned by accept())
  * Returns:
  *		0 on success, -1 on failure.
  */
@@ -26,9 +25,7 @@ int handle_connection(int connectionfd) {
 
 	// (2) Print out the message
 
-	// (3) Send response code to client
-
-	// (4) Close connection
+	// (3) Close connection
 
 	return 0;
 }
@@ -54,16 +51,16 @@ int run_server(int port, int queue_size) {
 	if (make_server_sockaddr(&addr, port) == -1) {
 		return -1;
 	}
-	/* (bind here) */
 
-	// (3b) Detect which port was chosen
+	// (3b) Bind to the port.
+
+	// (3c) Detect which port was chosen.
+	port = get_port_number(sockfd);
+	printf("Server listening on port %d...\n", port);
 
 	// (4) Begin listening for incoming connections.
 
 	// (5) Serve incoming connections one by one forever.
-	while (true) {
-		
-	}
 }
 
 int main(int argc, const char **argv) {

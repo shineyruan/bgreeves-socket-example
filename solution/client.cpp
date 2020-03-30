@@ -10,22 +10,20 @@
 static const int MAX_MESSAGE_SIZE = 256;
 
 /**
- * Sends a string message to the server and waits for an integer response.
+ * Sends a string message to the server.
  *
  * Parameters:
  *		hostname: 	Remote hostname of the server.
  *		port: 		Remote port of the server.
- * 		message: 	The message to send.
+ * 		message: 	The message to send, as a C-string.
  * Returns:
- *		The server's response code on success, -1 on failure.
+ *		0 on success, -1 on failure.
  */
 int send_message(const char *hostname, int port, const char *message) {
 	if (strlen(message) > MAX_MESSAGE_SIZE) {
 		perror("Error: Message exceeds maximum length\n");
 		return -1;
 	}
-
-	int response = -1;
 
 	// (1) Create a socket
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -43,24 +41,15 @@ int send_message(const char *hostname, int port, const char *message) {
 	}
 	
 	// (4) Send message to remote server
-	if (send(sockfd, message, strlen(message) + 1, 0) == -1) {
+	if (send(sockfd, message, strlen(message), 0) == -1) {
 		perror("Error sending on stream socket");
 		return -1;
 	}
 
-	// (5) Wait for integer response
-	if (recv(sockfd, &response, sizeof(response), MSG_WAITALL) == -1) {
-		perror("Error receiving response from server");
-		return -1;
-	}
-
-	// Convert from network to host byte order
-	response = ntohs(response);
-
-	// (6) Close connection
+	// (5) Close connection
 	close(sockfd);
 
-	return response;
+	return 0;
 }
 
 int main(int argc, const char **argv) {
@@ -72,12 +61,11 @@ int main(int argc, const char **argv) {
 	const char *hostname = argv[1];
 	int port = atoi(argv[2]);
 	const char *message = argv[3];
-	printf("Sending message %s to %s:%d\n", message, hostname, port);
 
-	int response = send_message(hostname, port, message);
-	if (response == -1) {
+	printf("Sending message %s to %s:%d\n", message, hostname, port);
+	if (send_message(hostname, port, message) == -1) {
 		return 1;
 	}
-	printf("Server responds with status code %d\n", response);
+
 	return 0;
 }
